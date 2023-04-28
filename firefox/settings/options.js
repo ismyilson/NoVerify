@@ -18,12 +18,5 @@ function restoreOptions() {
     getting.then(setCurrentChoice, onError);
 }
 
-// const userBrowser = (function () {
-//     return window.chrome ||
-//         window.msBrowser ||
-//         window.browser ||
-//         browser;
-// })();
-
 document.addEventListener("DOMContentLoaded", restoreOptions);
 document.querySelector("form").addEventListener("submit", saveOptions);

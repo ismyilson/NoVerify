@@ -56,7 +56,7 @@ function getUsernameFromURL() {
 function addWhitelistAddIcon(username, lastChild) {
     const element = document.createElement('img');
     element.className = lastChild.className;
-    element.src = userBrowser.runtime.getURL("images/acc_add.png");
+    element.src = browser.runtime.getURL("images/acc_add.png");
     element.style.width = "20px";
     element.style.maxWidth = "20px";
     element.style.height = "20px";
@@ -66,7 +66,7 @@ function addWhitelistAddIcon(username, lastChild) {
     element.addEventListener('click', function (e) {
         whitelist.push(username);
 
-        userBrowser.storage.sync.set({
+        browser.storage.sync.set({
             whitelist: whitelist.join('\n')
         });
 
@@ -80,7 +80,7 @@ function addWhitelistAddIcon(username, lastChild) {
 function addWhitelistRemoveIcon(username, lastChild) {
     const element = document.createElement('img');
     element.className = lastChild.className;
-    element.src = userBrowser.runtime.getURL("images/acc_remove.png");
+    element.src = browser.runtime.getURL("images/acc_remove.png");
     element.style.width = "30px";
     element.style.maxWidth = "30px";
     element.style.height = "30px";
@@ -90,7 +90,7 @@ function addWhitelistRemoveIcon(username, lastChild) {
     element.addEventListener('click', function (e) {
         whitelist = whitelist.filter(item => item != username);
 
-        userBrowser.storage.sync.set({
+        browser.storage.sync.set({
             whitelist: whitelist.join('\n')
         });
 
@@ -112,8 +112,14 @@ function addWhitelistIconIfUserPanel(node) {
         return;
     }
 
-    const username = getUsernameFromURL();
+    // Check if lastChild is verified tag
     const lastChild = usernameBlock.lastChild;
+    const verifiedTag = lastChild.querySelector('[data-testid="icon-verified"]');
+    if (!verifiedTag) {
+        return;
+    }
+
+    const username = getUsernameFromURL();
 
     let element;
     if (whitelist.includes(username)) {
@@ -128,14 +134,7 @@ function addWhitelistIconIfUserPanel(node) {
 
 var whitelist = [];
 
-const userBrowser = (function () {
-    return window.chrome ||
-        window.msBrowser ||
-        window.browser ||
-        browser;
-})();
-
-const getting = userBrowser.storage.sync.get('whitelist');
+const getting = browser.storage.sync.get('whitelist');
 getting.then(onGot, onError);
 
 const observer = new MutationObserver((mutations) => {
