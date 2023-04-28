@@ -21,6 +21,10 @@
             "id": "ismyilson@gmail.com"
         }
     },
+
+    "background": {
+        "scripts": ["background.js"]
+    },
   
     "content_scripts": [
       {

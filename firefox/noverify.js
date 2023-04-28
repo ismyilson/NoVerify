@@ -1,11 +1,19 @@
 function onError(error) {
     console.log(`Error: ${error}`);
 }
-  
-function onGot(item) {
-    if (item.whitelist) {
-        whitelist = item.whitelist.split('\n');
+
+function onGetSettings(result) {
+    result = result.settings;
+    settings = {
+        businessAllowed: result.businessAllowed,
+        whitelist: result.whitelist.split('\n')
     }
+
+    start();
+}
+
+function isBusinessVerified(verifiedTag) {
+    return verifiedTag.firstChild.childElementCount > 1;
 }
 
 function removeIfVerified(node) {
@@ -20,18 +28,23 @@ function removeIfVerified(node) {
             return;
         }
         
+        // Check if user is whitelisted
         const user = verifiedTweet.closest('[href]');
         if (user) {
             const username = user.getAttribute('href').replace('/', '').toLowerCase();
-            if (whitelist.includes(username)) {
+            if (settings.whitelist.includes(username)) {
                 return;
             }
+        }
+
+        // Check if we allow business
+        if (settings.businessAllowed && isBusinessVerified(verifiedTweet)) {
+            return;
         }
 
         block.firstChild?.remove();
     });
 }
-
 
 function getUsernameFromURL() {
     const search = '.com';
@@ -52,7 +65,6 @@ function getUsernameFromURL() {
     return substr;
 }
 
-
 function addWhitelistAddIcon(username, lastChild) {
     const element = document.createElement('img');
     element.className = lastChild.className;
@@ -64,10 +76,12 @@ function addWhitelistAddIcon(username, lastChild) {
     element.style.margin = "0 0 1px 5px";
 
     element.addEventListener('click', function (e) {
-        whitelist.push(username);
+        settings.whitelist.push(username);
 
         browser.storage.sync.set({
-            whitelist: whitelist.join('\n')
+            settings: {
+                whitelist: settings.whitelist.join('\n')
+            }
         });
 
         location.reload();
@@ -75,7 +89,6 @@ function addWhitelistAddIcon(username, lastChild) {
 
     return element;
 }
-
 
 function addWhitelistRemoveIcon(username, lastChild) {
     const element = document.createElement('img');
@@ -88,10 +101,12 @@ function addWhitelistRemoveIcon(username, lastChild) {
     element.style.margin = "0 0 6px 0";
 
     element.addEventListener('click', function (e) {
-        whitelist = whitelist.filter(item => item != username);
+        settings.whitelist = settings.whitelist.filter(item => item != username);
 
         browser.storage.sync.set({
-            whitelist: whitelist.join('\n')
+            settings: {
+                whitelist: settings.whitelist.join('\n')
+            }
         });
 
         location.reload();
@@ -99,7 +114,6 @@ function addWhitelistRemoveIcon(username, lastChild) {
 
     return element;
 }
-
 
 function addWhitelistIconIfUserPanel(node) {
     const userBlock = node.querySelectorAll('[data-testid="UserName"]');
@@ -122,34 +136,37 @@ function addWhitelistIconIfUserPanel(node) {
     const username = getUsernameFromURL();
 
     let element;
-    if (whitelist.includes(username)) {
+    if (settings.whitelist.includes(username)) {
         element = addWhitelistRemoveIcon(username, lastChild);
     } else {
+        if (settings.businessAllowed && isBusinessVerified(verifiedTag)) {
+            return;
+        }
+
         element = addWhitelistAddIcon(username, lastChild);
     }
 
     usernameBlock.appendChild(element);
 }
 
-
-var whitelist = [];
-
-const getting = browser.storage.sync.get('whitelist');
-getting.then(onGot, onError);
-
-const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-        if (mutation.addedNodes && mutation.addedNodes.length > 0) {
-            for (let i = 0; i < mutation.addedNodes.length; i++) {
-                const newNode = mutation.addedNodes[i];
-                removeIfVerified(newNode);
-                addWhitelistIconIfUserPanel(newNode);
+function start() {
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                for (let i = 0; i < mutation.addedNodes.length; i++) {
+                    const newNode = mutation.addedNodes[i];
+                    removeIfVerified(newNode);
+                    addWhitelistIconIfUserPanel(newNode);
+                }
             }
-        }
+        });
     });
-});
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
 
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
-});
+var settings = {};
+browser.storage.sync.get('settings').then(onGetSettings, onError);

@@ -1,22 +1,28 @@
 function saveOptions(e) {
     e.preventDefault();
+    
     browser.storage.sync.set({
-        whitelist: document.querySelector("#whitelist").value
+        settings: {
+            businessAllowed: document.getElementById('businessAllowed').checked,
+            whitelist: document.getElementById('whitelist').value
+        }
     });
 }
 
 function restoreOptions() {
-    function setCurrentChoice(result) {
-        document.querySelector("#whitelist").value = result.whitelist;
+    function setSettings(result) {
+        let settings = result.settings;
+
+        document.getElementById('businessAllowed').checked = settings.businessAllowed;
+        document.getElementById('whitelist').value = settings.whitelist;
     }
   
     function onError(error) {
         console.log(`Error: ${error}`);
     }
   
-    let getting = browser.storage.sync.get("whitelist");
-    getting.then(setCurrentChoice, onError);
+    browser.storage.sync.get('settings').then(setSettings, onError);
 }
 
-document.addEventListener("DOMContentLoaded", restoreOptions);
-document.querySelector("form").addEventListener("submit", saveOptions);
+document.addEventListener('DOMContentLoaded', restoreOptions);
+document.querySelector('form').addEventListener('submit', saveOptions);
